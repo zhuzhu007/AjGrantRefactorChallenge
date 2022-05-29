@@ -1,4 +1,5 @@
 ﻿using AjGrantRefactorChallenge.Constants;
+using AjGrantRefactorChallenge.Line;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,17 +9,18 @@ namespace AjGrantRefactorChallenge
 {
     public class Order
     {
-        private const double TaxRate = .1d;
-        private readonly IList<Line> _lines = new List<Line>();
+        private const decimal TaxRate = .1m;
+        private readonly IList<ILine> _lines;
 
         public Order(string company)
         {
             Company = company;
+            _lines = new List<ILine>();
         }
 
         public string Company { get; set; }
 
-        public void AddLine(Line line)
+        public void AddLine(ILine line)
         {
             _lines.Add(line);
         }
@@ -27,39 +29,17 @@ namespace AjGrantRefactorChallenge
         {
             Logger.Instance.LogInformation("Printing receipt (text version) - Start");
 
-            var totalAmount = 0d;
+            var totalAmount = 0m;
             var result = new StringBuilder(ReceiptTemplateConstants.CONSOLE_RECEIPT_TEMPLATE);
             var lines = new StringBuilder();
+
             for (var index = 0; index < _lines.Count; index++)
             {
                 var line = _lines[index];
-                var thisAmount = 0d;
-                if (line.Policy.Price == Policy.Car)
-                {
-                    if (line.Quantity >= 2)
-                        thisAmount += line.Quantity * line.Policy.Price * .9d;
-                    else
-                        thisAmount += line.Quantity * line.Policy.Price;
-                }
-                else if (line.Policy.Price == Policy.Motorcycle)
-                {
-                    if (line.Quantity >= 2)
-                        thisAmount += line.Quantity * line.Policy.Price * .8d;
-                    else
-                        thisAmount += line.Quantity * line.Policy.Price;
-                }
-                else if (line.Policy.Price == Policy.Home)
-                {
-                    if (line.Quantity >= 2)
-                        thisAmount += line.Quantity * line.Policy.Price * .8d;
-                    else
-                        thisAmount += line.Quantity * line.Policy.Price;
-                }
-
+                var thisAmount = line.Amount;
                 lines.Append(string.Format(ReceiptTemplateConstants.CONSOLE_LINE_TEMPLATE, line.Quantity, line.Policy.PolicyHolderName, line.Policy.Description, thisAmount.ToString("C")));
                 totalAmount += thisAmount;
             }
-
             var tax = totalAmount * TaxRate;
 
             result = result.Replace("{COMPANY_NAME}", Company)
@@ -77,7 +57,7 @@ namespace AjGrantRefactorChallenge
         {
             Logger.Instance.LogInformation("Printing receipt (HTML version) - Start");
 
-            var totalAmount = 0d;
+            var totalAmount = 0m;
             var result = new StringBuilder(ReceiptTemplateConstants.HTML_RECEIPT_TEMPLATE);
             var lines = new StringBuilder();
             if (_lines.Any())
@@ -85,33 +65,12 @@ namespace AjGrantRefactorChallenge
                 for (var index = 0; index < _lines.Count; index++)
                 {
                     var line = _lines[index];
-                    var thisAmount = 0d;
-                    if (line.Policy.Price == Policy.Car)
-                    {
-                        if (line.Quantity >= 2)
-                            thisAmount += line.Quantity * line.Policy.Price * .9d;
-                        else
-                            thisAmount += line.Quantity * line.Policy.Price;
-                    }
-                    else if (line.Policy.Price == Policy.Motorcycle)
-                    {
-                        if (line.Quantity >= 2)
-                            thisAmount += line.Quantity * line.Policy.Price * .8d;
-                        else
-                            thisAmount += line.Quantity * line.Policy.Price;
-                    }
-                    else if (line.Policy.Price == Policy.Home)
-                    {
-                        if (line.Quantity >= 2)
-                            thisAmount += line.Quantity * line.Policy.Price * .8d;
-                        else
-                            thisAmount += line.Quantity * line.Policy.Price;
-                    }
-
+                    var thisAmount = line.Amount;
                     lines.Append(string.Format(ReceiptTemplateConstants.HTML_LINE_TEMPLATE, line.Quantity, line.Policy.PolicyHolderName, line.Policy.Description, thisAmount.ToString("C")));
                     totalAmount += thisAmount;
                 }
             }
+
             var tax = totalAmount * TaxRate;
             result = result.Replace("{COMPANY_NAME}", Company)
             .Replace("{LINES}", lines.ToString())
@@ -119,6 +78,7 @@ namespace AjGrantRefactorChallenge
             .Replace("{TAX}", tax.ToString("C"))
             .Replace("{TOTAL}", (totalAmount + tax).ToString("C"))
             .Replace("{DATETIME}", orderTime.ToString("F"));
+
             Logger.Instance.LogInformation("Printing receipt (HTML version) - Finish");
 
             return result.ToString();

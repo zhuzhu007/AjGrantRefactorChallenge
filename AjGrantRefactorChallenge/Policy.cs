@@ -6,22 +6,19 @@ using System.Threading.Tasks;
 
 namespace AjGrantRefactorChallenge
 {
-    public class Policy
+    public class Policy : IPolicy
     {
-        public const int Car = 105;
-        public const int Motorcycle = 56;
-        public const int Home = 235;
-
-        public Policy(string policyHolderName, string description, int price)
+        public Policy(string policyType, string policyHolderName, string description, decimal price)
         {
+            PolicyType= policyType;
             PolicyHolderName = policyHolderName;
             Description = description;
             Price = price;
         }
-
+        public string PolicyType { get; set; }
         public string PolicyHolderName { get; set; }
         public string Description { get; set; }
-        public int Price { get; set; }
+        public decimal Price { get; set; }
 
     }
 }
