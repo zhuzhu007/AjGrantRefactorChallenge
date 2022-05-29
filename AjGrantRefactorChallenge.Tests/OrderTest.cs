@@ -1,4 +1,3 @@
-using AjGrantRefactorChallenge.Constants;
 using AjGrantRefactorChallenge.Line;
 using NUnit.Framework;
 using Shouldly;
@@ -18,143 +17,92 @@ namespace AjGrantRefactorChallenge.Tests
         private const decimal CAR_PRICE = 105m;
         private const decimal MOTORCYCLE_PRICE = 56m;
         private const decimal HOME_PRICE = 235m;
-        private const decimal TAX = .1m;
         private readonly static IPolicy BMW = new Policy("Car", POLICY_HOLDER_JANE, DESC_BMW, CAR_PRICE);
         private readonly static IPolicy Harley = new Policy("MotorCycle", POLICY_HOLDER_JOHN, DESC_HARLEY, MOTORCYCLE_PRICE);
         private readonly static IPolicy SunnyCoast = new Policy("Home", POLICY_HOLDER_JOHN, DESC_SUNSHINE_COAST, HOME_PRICE);
-        private static DateTime OrderTime;
-        private static string OrderTimeString = null!;
 
-        [OneTimeSetUp]
-        public void OneTimeSetUp(){
-            OrderTime = DateTime.Now;
-            OrderTimeString = string.Format("{0}", OrderTime.ToString("F"));
-        }
-
-        private string GenerateExpectedReceipt(string template, string lines, decimal amount, decimal tax, decimal total) =>
-            template
-            .Replace("{COMPANY_NAME}", COMPANY_AJGRANT)
-            .Replace("{LINES}", lines)
-            .Replace("{SUBTOTAL}", amount.ToString("C"))
-            .Replace("{TAX}", tax.ToString("C"))
-            .Replace("{TOTAL}", total.ToString("C"))
-            .Replace("{DATETIME}", OrderTimeString);
-
-        #region Receipts
-        [Test]
-        public void ReceiptOneBMW()
+        public void Order_Should_Be_Empty(int quantity)
         {
             // arrange
-            var order = new Order(COMPANY_AJGRANT);
-            const int quantity = 1;
-            const decimal amount = CAR_PRICE;
-            const decimal tax = amount * TAX;
-            const decimal total = amount + tax;
-            string lines = string.Format(ReceiptTemplateConstants.CONSOLE_LINE_TEMPLATE, quantity, POLICY_HOLDER_JANE, DESC_BMW, amount.ToString("C"));
-            // Order Receipt for AjGrant{Environment.NewLine}\t1 x Jane Doe BMW = $105.00{Environment.NewLine}Sub-Total: $105.00{Environment.NewLine}Tax: $10.50{Environment.NewLine}Total: $115.50";
-            var expectedResultStatementOneBMW = GenerateExpectedReceipt(ReceiptTemplateConstants.CONSOLE_RECEIPT_TEMPLATE, lines, amount, tax, total);
+            IOrder order = new Order(COMPANY_AJGRANT);
             // act
-            order.AddLine(new CarLine(BMW, quantity));
-            var result = order.Receipt(OrderTime);
+            var result = order.GetLines();
             // assert
-            result.ShouldBe(expectedResultStatementOneBMW);
+            result.ShouldBeEmpty();
         }
-
-        [Test]
-        public void ReceiptOneHarley()
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        [TestCase(10)]
+        [TestCase(100)]
+        public void Order_Should_Contain_BMW(int quantity)
         {
             // arrange
-            var order = new Order(COMPANY_AJGRANT);
-            const int quantity = 1;
-            const decimal amount = MOTORCYCLE_PRICE;
-            const decimal tax = amount * TAX;
-            const decimal total = amount + tax;
-            string lines = string.Format(ReceiptTemplateConstants.CONSOLE_LINE_TEMPLATE, quantity, POLICY_HOLDER_JOHN, DESC_HARLEY, amount.ToString("C"));
-            // Order Receipt for AjGrant{Environment.NewLine}\t1 x John Doe Harley = $56.00{Environment.NewLine}Sub-Total: $56.00{Environment.NewLine}Tax: $5.60{Environment.NewLine}Total: $61.60
-            var expectedResultStatementOneHarley = GenerateExpectedReceipt(ReceiptTemplateConstants.CONSOLE_RECEIPT_TEMPLATE, lines, amount, tax, total);
+            IOrder order = new Order(COMPANY_AJGRANT);
+            ILine line = new CarLine(BMW, quantity);
             // act
-            order.AddLine(new MotorCycleLine(Harley, quantity));
-            var result = order.Receipt(OrderTime);
+            order.AddLine(line);
+            var result = order.GetLines();
             // assert
-            result.ShouldBe(expectedResultStatementOneHarley);
+            result.ShouldContain(line);
         }
 
-        [Test]
-        public void ReceiptOneSunnyCoast()
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        [TestCase(10)]
+        [TestCase(100)]
+        public void Order_Should_Contain_Harley(int quantity)
         {
             // arrange
-            var order = new Order(COMPANY_AJGRANT);
-            const int quantity = 1;
-            const decimal amount = HOME_PRICE;
-            const decimal tax = amount * TAX;
-            const decimal total = amount + tax;
-            string lines = string.Format(ReceiptTemplateConstants.CONSOLE_LINE_TEMPLATE, quantity, POLICY_HOLDER_JOHN, DESC_SUNSHINE_COAST, amount.ToString("C"));
-            // Order Receipt for AjGrant{Environment.NewLine}\t1 x John Doe Sunshine Coast = $235.00{Environment.NewLine}Sub-Total: $235.00{Environment.NewLine}Tax: $23.50{Environment.NewLine}Total: $258.50
-            var expectedResultStatementOneSunnyCoast = GenerateExpectedReceipt(ReceiptTemplateConstants.CONSOLE_RECEIPT_TEMPLATE, lines, amount, tax, total);
+            IOrder order = new Order(COMPANY_AJGRANT);
+            ILine line = new MotorCycleLine(Harley, quantity);
             // act
-            order.AddLine(new HomeLine(SunnyCoast, quantity));
-            var result = order.Receipt(OrderTime);
+            order.AddLine(line);
+            var result = order.GetLines();
             // assert
-            result.ShouldBe(expectedResultStatementOneSunnyCoast);
+            result.ShouldContain(line);
         }
 
-        #endregion
-
-        #region HTML Receipts
-        [Test]
-        public void HtmlReceiptOneBMW()
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        [TestCase(10)]
+        [TestCase(100)]
+        public void Order_Should_Contain_SunnyCoast(int quantity)
         {
             // arrange
-            var order = new Order(COMPANY_AJGRANT);
-            const int quantity = 1;
-            const decimal amount = CAR_PRICE;
-            const decimal tax = amount * TAX;
-            const decimal total = amount + tax;
-            string lines = string.Format(ReceiptTemplateConstants.HTML_LINE_TEMPLATE, quantity, POLICY_HOLDER_JANE, DESC_BMW, amount.ToString("C"));
-            var expectedHtmlResultStatementOneBMW = GenerateExpectedReceipt(ReceiptTemplateConstants.HTML_RECEIPT_TEMPLATE, lines, amount, tax, total);
+            IOrder order = new Order(COMPANY_AJGRANT);
+            ILine line = new HomeLine(SunnyCoast, quantity);
             // act
-            order.AddLine(new CarLine(BMW, quantity));
-            var result = order.HtmlReceipt(OrderTime);
+            order.AddLine(line);
+            var result = order.GetLines();
             // assert
-            result.ShouldBe(expectedHtmlResultStatementOneBMW);
+            result.ShouldContain(line);
         }
-
-        [Test]
-        public void HtmlReceiptOneHarley()
+ 
+        [TestCase(0, 0, 0)]
+        [TestCase(1, 1, 1)]
+        [TestCase(1, 2, 3)]
+        [TestCase(3, 2, 1)]
+        [TestCase(4, 5, 6)]
+        public void Order_Should_Contain_All(int carQuantity, int motorcycleQuantity, int homeQuantity)
         {
             // arrange
-            var order = new Order(COMPANY_AJGRANT);
-            const int quantity = 1;
-            const decimal amount = MOTORCYCLE_PRICE;
-            const decimal tax = amount * TAX;
-            const decimal total = amount + tax;
-            string lines = string.Format(ReceiptTemplateConstants.HTML_LINE_TEMPLATE, quantity, POLICY_HOLDER_JOHN, DESC_HARLEY, amount.ToString("C"));
-            var expectedHtmlResultStatementOneHarley = GenerateExpectedReceipt(ReceiptTemplateConstants.HTML_RECEIPT_TEMPLATE, lines, amount, tax, total);
+            IOrder order = new Order(COMPANY_AJGRANT);
+            ILine carline = new CarLine(BMW, carQuantity);
+            ILine motorcycleline = new MotorCycleLine(Harley, motorcycleQuantity);
+            ILine homeline = new HomeLine(SunnyCoast, homeQuantity);
             // act
-            order.AddLine(new MotorCycleLine(Harley, quantity));
-            var result = order.HtmlReceipt(OrderTime);
+            order.AddLine(carline);
+            order.AddLine(motorcycleline);
+            order.AddLine(homeline);
+            var result = order.GetLines();
             // assert
-            result.ShouldBe(expectedHtmlResultStatementOneHarley);
+            result.ShouldContain(carline);
+            result.ShouldContain(motorcycleline);
+            result.ShouldContain(homeline);
         }
 
-        [Test]
-        public void HtmlReceiptOneSunnyCoast()
-        {
-            // arrange
-            var order = new Order(COMPANY_AJGRANT);
-            const int quantity = 1;
-            const decimal amount = HOME_PRICE;
-            const decimal tax = amount * TAX;
-            const decimal total = amount + tax;
-            string lines = string.Format(ReceiptTemplateConstants.HTML_LINE_TEMPLATE, quantity, POLICY_HOLDER_JOHN, DESC_SUNSHINE_COAST, amount.ToString("C"));
-            var expectedHtmlResultStatementOneSunnyCoast = GenerateExpectedReceipt(ReceiptTemplateConstants.HTML_RECEIPT_TEMPLATE, lines, amount, tax, total);
-            // act
-            order.AddLine(new HomeLine(SunnyCoast, quantity));
-            var result = order.HtmlReceipt(OrderTime);
-            // assert
-            result.ShouldBe(expectedHtmlResultStatementOneSunnyCoast);
-        }
-
-        #endregion
     }
 }

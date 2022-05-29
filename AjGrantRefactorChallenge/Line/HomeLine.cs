@@ -12,9 +12,6 @@ namespace AjGrantRefactorChallenge.Line
         public int Quantity { get; set; }
         public decimal Amount {
             get {
-                if (!Policy.PolicyType.Equals(nameof(HomeLine).Replace("Line", string.Empty))){
-                    throw new Exception("unsupported policy");
-                }
                 if (Quantity >= 2)
                     return Quantity * Policy.Price * .8m;
                 else
