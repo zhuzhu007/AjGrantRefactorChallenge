@@ -1,88 +1,155 @@
+using AjGrantRefactorChallenge.Constants;
 using NUnit.Framework;
 using Shouldly;
+using System;
 
 namespace AjGrantRefactorChallenge.Tests
 {
     [TestFixture]
     public class OrderTest
     {
-        private readonly static Policy BMW = new Policy("Jane Doe", "BMW", Policy.Car);
-        private readonly static Policy Harley = new Policy("John Doe", "Harley", Policy.Motorcycle);
-        private readonly static Policy SunnyCoast = new Policy("John Doe", "Sunshine Coast", Policy.Home);
+        private const string COMPANY_AJGRANT = "AjGrant";
+        private const string POLICY_HOLDER_JANE = "Jane Doe";
+        private const string POLICY_HOLDER_JOHN = "John Doe";
+        private const string DESC_BMW = "BMW";
+        private const string DESC_HARLEY = "Harley";
+        private const string DESC_SUNSHINE_COAST = "Sunshine Coast";
+        private readonly static Policy BMW = new Policy(POLICY_HOLDER_JANE, DESC_BMW, Policy.Car);
+        private readonly static Policy Harley = new Policy(POLICY_HOLDER_JOHN, DESC_HARLEY, Policy.Motorcycle);
+        private readonly static Policy SunnyCoast = new Policy(POLICY_HOLDER_JOHN, DESC_SUNSHINE_COAST, Policy.Home);
+        private static DateTime OrderTime;
+        private static string OrderTimeString = null!;
 
+        [OneTimeSetUp]
+        public void OneTimeSetUp(){
+            OrderTime = DateTime.Now;
+            OrderTimeString = string.Format("{0}", OrderTime.ToString("F"));
+        }
+
+        private string GenerateExpectedReceipt(string template, string lines, double amount, double tax, double total) =>
+            template
+            .Replace("{COMPANY_NAME}", COMPANY_AJGRANT)
+            .Replace("{LINES}", lines)
+            .Replace("{SUBTOTAL}", amount.ToString("C"))
+            .Replace("{TAX}", tax.ToString("C"))
+            .Replace("{TOTAL}", total.ToString("C"))
+            .Replace("{DATETIME}", OrderTimeString);
+
+        #region Receipts
         [Test]
         public void ReceiptOneBMW()
         {
-            var order = new Order("AjGrant");
-            order.AddLine(new Line(BMW, 1));
-            order.Receipt().ShouldBe(ResultStatementOneBMW);
+            // arrange
+            var order = new Order(COMPANY_AJGRANT);
+            const int quantity = 1;
+            const double amount = 105.00d;
+            const double tax = amount * .1d;
+            const double total = amount + tax;
+            string lines = string.Format(ReceiptTemplateConstants.CONSOLE_LINE_TEMPLATE, quantity, POLICY_HOLDER_JANE, DESC_BMW, amount.ToString("C"));
+            // Order Receipt for AjGrant{Environment.NewLine}\t1 x Jane Doe BMW = $105.00{Environment.NewLine}Sub-Total: $105.00{Environment.NewLine}Tax: $10.50{Environment.NewLine}Total: $115.50";
+            var expectedResultStatementOneBMW = GenerateExpectedReceipt(ReceiptTemplateConstants.CONSOLE_RECEIPT_TEMPLATE, lines, amount, tax, total);
+            // act
+            order.AddLine(new Line(BMW, quantity));
+            var result = order.Receipt(OrderTime);
+            // assert
+            result.ShouldBe(expectedResultStatementOneBMW);
         }
-
-        private const string ResultStatementOneBMW = @"Order Receipt for AjGrant
-	1 x Jane Doe BMW = $105.00
-Sub-Total: $105.00
-Tax: $10.50
-Total: $115.50
-Date: Friday, 25 October 2019 9:07:27 AM";
 
         [Test]
         public void ReceiptOneHarley()
         {
-            var order = new Order("AjGrant");
-            order.AddLine(new Line(Harley, 1));
-            order.Receipt().ShouldBe(ResultStatementOneHarley);
+            // arrange
+            var order = new Order(COMPANY_AJGRANT);
+            const int quantity = 1;
+            const double amount = 56.00d;
+            const double tax = amount * .1d;
+            const double total = amount + tax;
+            string lines = string.Format(ReceiptTemplateConstants.CONSOLE_LINE_TEMPLATE, quantity, POLICY_HOLDER_JOHN, DESC_HARLEY, amount.ToString("C"));
+            // Order Receipt for AjGrant{Environment.NewLine}\t1 x John Doe Harley = $56.00{Environment.NewLine}Sub-Total: $56.00{Environment.NewLine}Tax: $5.60{Environment.NewLine}Total: $61.60
+            var expectedResultStatementOneHarley = GenerateExpectedReceipt(ReceiptTemplateConstants.CONSOLE_RECEIPT_TEMPLATE, lines, amount, tax, total);
+            // act
+            order.AddLine(new Line(Harley, quantity));
+            var result = order.Receipt(OrderTime);
+            // assert
+            result.ShouldBe(expectedResultStatementOneHarley);
         }
-
-        private const string ResultStatementOneHarley = @"Order Receipt for AjGrant
-	1 x John Doe Harley = $56.00
-Sub-Total: $56.00
-Tax: $5.60
-Total: $61.60
-Date: Friday, 25 October 2019 9:07:27 AM";
 
         [Test]
         public void ReceiptOneSunnyCoast()
         {
-            var order = new Order("AjGrant");
-            order.AddLine(new Line(SunnyCoast, 1));
-            order.Receipt().ShouldBe(ResultStatementOneSunnyCoast);
+            // arrange
+            var order = new Order(COMPANY_AJGRANT);
+            const int quantity = 1;
+            const double amount = 235.00d;
+            const double tax = amount * .1d;
+            const double total = amount + tax;
+            string lines = string.Format(ReceiptTemplateConstants.CONSOLE_LINE_TEMPLATE, quantity, POLICY_HOLDER_JOHN, DESC_SUNSHINE_COAST, amount.ToString("C"));
+            // Order Receipt for AjGrant{Environment.NewLine}\t1 x John Doe Sunshine Coast = $235.00{Environment.NewLine}Sub-Total: $235.00{Environment.NewLine}Tax: $23.50{Environment.NewLine}Total: $258.50
+            var expectedResultStatementOneSunnyCoast = GenerateExpectedReceipt(ReceiptTemplateConstants.CONSOLE_RECEIPT_TEMPLATE, lines, amount, tax, total);
+            // act
+            order.AddLine(new Line(SunnyCoast, quantity));
+            var result = order.Receipt(OrderTime);
+            // assert
+            result.ShouldBe(expectedResultStatementOneSunnyCoast);
         }
 
-        private const string ResultStatementOneSunnyCoast = @"Order Receipt for AjGrant
-	1 x John Doe Sunshine Coast = $235.00
-Sub-Total: $235.00
-Tax: $23.50
-Total: $258.50
-Date: Friday, 25 October 2019 9:07:27 AM";
+        #endregion
 
+        #region HTML Receipts
         [Test]
         public void HtmlReceiptOneBMW()
         {
-            var order = new Order("AjGrant");
-            order.AddLine(new Line(BMW, 1));
-            order.HtmlReceipt().ShouldBe(HtmlResultStatementOneBMW);
+            // arrange
+            var order = new Order(COMPANY_AJGRANT);
+            const int quantity = 1;
+            const double amount = 105.00d;
+            const double tax = amount * .1d;
+            const double total = amount + tax;
+            string lines = string.Format(ReceiptTemplateConstants.HTML_LINE_TEMPLATE, quantity, POLICY_HOLDER_JANE, DESC_BMW, amount.ToString("C"));
+            var expectedHtmlResultStatementOneBMW = GenerateExpectedReceipt(ReceiptTemplateConstants.HTML_RECEIPT_TEMPLATE, lines, amount, tax, total);
+            // act
+            order.AddLine(new Line(BMW, quantity));
+            var result = order.HtmlReceipt(OrderTime);
+            // assert
+            result.ShouldBe(expectedHtmlResultStatementOneBMW);
         }
-
-        private const string HtmlResultStatementOneBMW = @"<html><body><h1>Order Receipt for AjGrant</h1><ul><li>1 x Jane Doe BMW = $105.00</li></ul><h3>Sub-Total: $105.00</h3><h3>Tax: $10.50</h3><h2>Total: $115.50</h2><h3>Date: Friday, 25 October 2019 9:07:27 AM</h3></body></html>";
 
         [Test]
         public void HtmlReceiptOneHarley()
         {
-            var order = new Order("AjGrant");
-            order.AddLine(new Line(Harley, 1));
-            order.HtmlReceipt().ShouldBe(HtmlResultStatementOneHarley);
+            // arrange
+            var order = new Order(COMPANY_AJGRANT);
+            const int quantity = 1;
+            const double amount = 56.00d;
+            const double tax = amount * .1d;
+            const double total = amount + tax;
+            string lines = string.Format(ReceiptTemplateConstants.HTML_LINE_TEMPLATE, quantity, POLICY_HOLDER_JOHN, DESC_HARLEY, amount.ToString("C"));
+            var expectedHtmlResultStatementOneHarley = GenerateExpectedReceipt(ReceiptTemplateConstants.HTML_RECEIPT_TEMPLATE, lines, amount, tax, total);
+            // act
+            order.AddLine(new Line(Harley, quantity));
+            var result = order.HtmlReceipt(OrderTime);
+            // assert
+            result.ShouldBe(expectedHtmlResultStatementOneHarley);
         }
-
-        private const string HtmlResultStatementOneHarley = @"<html><body><h1>Order Receipt for AjGrant</h1><ul><li>1 x John Doe Harley = $56.00</li></ul><h3>Sub-Total: $56.00</h3><h3>Tax: $5.60</h3><h2>Total: $61.60</h2><h3>Date: Friday, 25 October 2019 9:07:27 AM</h3></body></html>";
 
         [Test]
         public void HtmlReceiptOneSunnyCoast()
         {
-            var order = new Order("AjGrant");
-            order.AddLine(new Line(SunnyCoast, 1));
-            order.HtmlReceipt().ShouldBe(HtmlResultStatementOneSunnyCoast);
+            // arrange
+            var order = new Order(COMPANY_AJGRANT);
+            const int quantity = 1;
+            const double amount = 235.00d;
+            const double tax = amount * .1d;
+            const double total = amount + tax;
+            string lines = string.Format(ReceiptTemplateConstants.HTML_LINE_TEMPLATE, quantity, POLICY_HOLDER_JOHN, DESC_SUNSHINE_COAST, amount.ToString("C"));
+            var expectedHtmlResultStatementOneSunnyCoast = GenerateExpectedReceipt(ReceiptTemplateConstants.HTML_RECEIPT_TEMPLATE, lines, amount, tax, total);
+            // act
+            order.AddLine(new Line(SunnyCoast, quantity));
+            var result = order.HtmlReceipt(OrderTime);
+            // assert
+            result.ShouldBe(expectedHtmlResultStatementOneSunnyCoast);
         }
 
-        private const string HtmlResultStatementOneSunnyCoast = @"<html><body><h1>Order Receipt for AjGrant</h1><ul><li>1 x John Doe Sunshine Coast = $235.00</li></ul><h3>Sub-Total: $235.00</h3><h3>Tax: $23.50</h3><h2>Total: $258.50</h2><h3>Date: Friday, 25 October 2019 9:07:27 AM</h3></body></html>";
+        #endregion
     }
 }

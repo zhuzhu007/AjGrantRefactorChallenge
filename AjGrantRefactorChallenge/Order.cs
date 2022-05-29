@@ -1,8 +1,8 @@
-﻿using System;
+﻿using AjGrantRefactorChallenge.Constants;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace AjGrantRefactorChallenge
 {
@@ -23,19 +23,20 @@ namespace AjGrantRefactorChallenge
             _lines.Add(line);
         }
 
-        public string Receipt()
+        public string Receipt(DateTime orderTime)
         {
             Logger.Instance.LogInformation("Printing receipt (text version) - Start");
 
             var totalAmount = 0d;
-            var result = new StringBuilder(string.Format("Order Receipt for {0}{1}", Company, Environment.NewLine));
+            var result = new StringBuilder(ReceiptTemplateConstants.CONSOLE_RECEIPT_TEMPLATE);
+            var lines = new StringBuilder();
             for (var index = 0; index < _lines.Count; index++)
             {
                 var line = _lines[index];
                 var thisAmount = 0d;
                 if (line.Policy.Price == Policy.Car)
                 {
-                    if (line.Quantity >= 1)
+                    if (line.Quantity >= 2)
                         thisAmount += line.Quantity * line.Policy.Price * .9d;
                     else
                         thisAmount += line.Quantity * line.Policy.Price;
@@ -49,37 +50,39 @@ namespace AjGrantRefactorChallenge
                 }
                 else if (line.Policy.Price == Policy.Home)
                 {
-                    if (line.Quantity >= 1)
+                    if (line.Quantity >= 2)
                         thisAmount += line.Quantity * line.Policy.Price * .8d;
                     else
                         thisAmount += line.Quantity * line.Policy.Price;
                 }
 
-                result.AppendLine(string.Format("\t{0} x {1} {2} = {3}", line.Quantity, line.Policy.PolicyHolderName, line.Policy.Description, thisAmount.ToString("C")));
+                lines.Append(string.Format(ReceiptTemplateConstants.CONSOLE_LINE_TEMPLATE, line.Quantity, line.Policy.PolicyHolderName, line.Policy.Description, thisAmount.ToString("C")));
                 totalAmount += thisAmount;
             }
 
-            result.AppendLine(string.Format("Sub-Total: {0}", totalAmount.ToString("C")));
             var tax = totalAmount * TaxRate;
-            result.AppendLine(string.Format("Tax: {0}", tax.ToString("C")));
-            result.AppendLine(string.Format("Total: {0}", (totalAmount + tax).ToString("C")));
-            result.Append(string.Format("Date: {0}", DateTime.Now.ToString("F")));
 
+            result = result.Replace("{COMPANY_NAME}", Company)
+            .Replace("{LINES}", lines.ToString())
+            .Replace("{SUBTOTAL}", totalAmount.ToString("C"))
+            .Replace("{TAX}", tax.ToString("C"))
+            .Replace("{TOTAL}", (totalAmount + tax).ToString("C"))
+            .Replace("{DATETIME}", orderTime.ToString("F"));
             Logger.Instance.LogInformation("Printing receipt (text version) - Finish");
 
             return result.ToString();
         }
 
-        public string HtmlReceipt()
+        public string HtmlReceipt(DateTime orderTime)
         {
             Logger.Instance.LogInformation("Printing receipt (HTML version) - Start");
 
             var totalAmount = 0d;
-            var result = new StringBuilder(string.Format("<html><body><h1>Order Receipt for {0}</h1>", Company));
+            var result = new StringBuilder(ReceiptTemplateConstants.HTML_RECEIPT_TEMPLATE);
+            var lines = new StringBuilder();
             if (_lines.Any())
             {
-                result.Append("<ul>");
-                for (var index = 0; index <= _lines.Count; index++)
+                for (var index = 0; index < _lines.Count; index++)
                 {
                     var line = _lines[index];
                     var thisAmount = 0d;
@@ -105,19 +108,17 @@ namespace AjGrantRefactorChallenge
                             thisAmount += line.Quantity * line.Policy.Price;
                     }
 
-                    result.Append(string.Format("<li>{0} x {1} {2} = {3}</li>", line.Quantity, line.Policy.PolicyHolderName, line.Policy.Description, thisAmount.ToString("C")));
+                    lines.Append(string.Format(ReceiptTemplateConstants.HTML_LINE_TEMPLATE, line.Quantity, line.Policy.PolicyHolderName, line.Policy.Description, thisAmount.ToString("C")));
                     totalAmount += thisAmount;
                 }
-
-                result.Append("</ul>");
             }
-            result.Append(string.Format("<h3>Sub-Total: {0}</h3>", totalAmount.ToString("C")));
             var tax = totalAmount * TaxRate;
-            result.Append(string.Format("<h3>Tax: {0}</h3>", tax.ToString("C")));
-            result.Append(string.Format("<h2>Total: {0}</h2>", (totalAmount + tax).ToString("C")));
-            result.Append(string.Format("<h3>Date: {0}</h3>", DateTime.Now.ToString("F")));
-            result.Append("</body></html>");
-
+            result = result.Replace("{COMPANY_NAME}", Company)
+            .Replace("{LINES}", lines.ToString())
+            .Replace("{SUBTOTAL}", totalAmount.ToString("C"))
+            .Replace("{TAX}", tax.ToString("C"))
+            .Replace("{TOTAL}", (totalAmount + tax).ToString("C"))
+            .Replace("{DATETIME}", orderTime.ToString("F"));
             Logger.Instance.LogInformation("Printing receipt (HTML version) - Finish");
 
             return result.ToString();
